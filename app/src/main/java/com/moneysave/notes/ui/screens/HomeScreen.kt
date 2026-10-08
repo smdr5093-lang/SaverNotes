@@ -16,13 +16,62 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.moneysave.notes.MoneySaveApplication
+import com.moneysave.notes.viewmodel.NoteViewModel
+import com.moneysave.notes.viewmodel.NoteViewModelFactory
+import com.moneysave.notes.viewmodel.SavingsViewModel
+import com.moneysave.notes.viewmodel.SavingsViewModelFactory
+import com.moneysave.notes.viewmodel.TransactionViewModel
+import com.moneysave.notes.viewmodel.TransactionViewModelFactory
 
 @Composable
 fun HomeScreen(
     paddingValues: PaddingValues
 ) {
+    val context = LocalContext.current
+    val application =
+        context.applicationContext as MoneySaveApplication
+
+    val transactionViewModel: TransactionViewModel = viewModel(
+        factory = TransactionViewModelFactory(
+            application.transactionRepository
+        )
+    )
+
+    val savingsViewModel: SavingsViewModel = viewModel(
+        factory = SavingsViewModelFactory(
+            application.savingsRepository
+        )
+    )
+
+    val noteViewModel: NoteViewModel = viewModel(
+        factory = NoteViewModelFactory(
+            application.noteRepository
+        )
+    )
+
+    val transactions by transactionViewModel.transactions.collectAsState()
+    val goals by savingsViewModel.goals.collectAsState()
+    val notes by noteViewModel.notes.collectAsState()
+
+    val income = transactions
+        .filter { it.type.equals("income", ignoreCase = true) }
+        .sumOf { it.amount }
+
+    val expenses = transactions
+        .filter { it.type.equals("expense", ignoreCase = true) }
+        .sumOf { it.amount }
+
+    val balance = income - expenses
+
+    val saved = goals.sumOf { it.currentAmount }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -31,6 +80,7 @@ fun HomeScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+
         Text(
             text = "MoneySave Notes",
             style = MaterialTheme.typography.headlineMedium
@@ -43,7 +93,9 @@ fun HomeScreen(
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 4.dp
+            )
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
@@ -56,7 +108,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "₹0",
+                    text = "₹${"%.2f".format(balance)}",
                     style = MaterialTheme.typography.headlineLarge
                 )
             }
@@ -68,13 +120,13 @@ fun HomeScreen(
         ) {
             SummaryCard(
                 title = "Income",
-                amount = "₹0",
+                amount = "₹${"%.2f".format(income)}",
                 modifier = Modifier.weight(1f)
             )
 
             SummaryCard(
                 title = "Expenses",
-                amount = "₹0",
+                amount = "₹${"%.2f".format(expenses)}",
                 modifier = Modifier.weight(1f)
             )
         }
@@ -85,13 +137,13 @@ fun HomeScreen(
         ) {
             SummaryCard(
                 title = "Saved",
-                amount = "₹0",
+                amount = "₹${"%.2f".format(saved)}",
                 modifier = Modifier.weight(1f)
             )
 
             SummaryCard(
-                title = "This Month",
-                amount = "₹0",
+                title = "Transactions",
+                amount = transactions.size.toString(),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -109,15 +161,25 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "No transactions yet",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (transactions.isEmpty()) {
+                    Text(
+                        text = "No transactions yet."
+                    )
+                } else {
+                    transactions
+                        .take(5)
+                        .forEach { transaction ->
 
-                Text(
-                    text = "Start tracking your money by adding your first transaction.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                            Text(
+                                text = "${transaction.category} • ₹${"%.2f".format(transaction.amount)}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(6.dp)
+                            )
+                        }
+                }
             }
         }
 
@@ -134,15 +196,25 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "No savings goals yet",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (goals.isEmpty()) {
+                    Text(
+                        text = "No savings goals yet."
+                    )
+                } else {
+                    goals
+                        .take(5)
+                        .forEach { goal ->
 
-                Text(
-                    text = "Create a goal and start saving toward it.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                            Text(
+                                text = "${goal.name} • ₹${"%.2f".format(goal.currentAmount)} / ₹${"%.2f".format(goal.targetAmount)}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(6.dp)
+                            )
+                        }
+                }
             }
         }
 
@@ -159,15 +231,30 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    text = "No notes yet",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (notes.isEmpty()) {
+                    Text(
+                        text = "No notes yet."
+                    )
+                } else {
+                    notes
+                        .take(5)
+                        .forEach { note ->
 
-                Text(
-                    text = "Create your first note to stay organized.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                            Text(
+                                text = note.title,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+
+                            Text(
+                                text = note.content,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+
+                            Spacer(
+                                modifier = Modifier.height(8.dp)
+                            )
+                        }
+                }
             }
         }
     }
