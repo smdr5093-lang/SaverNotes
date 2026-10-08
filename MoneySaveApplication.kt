@@ -1,5 +1,36 @@
 package com.moneysave.notes
 
 import android.app.Application
+import com.moneysave.notes.data.NoteDatabase
+import com.moneysave.notes.data.NoteRepository
+import com.moneysave.notes.data.SavingsDatabase
+import com.moneysave.notes.data.SavingsRepository
+import com.moneysave.notes.data.TransactionDatabase
+import com.moneysave.notes.data.TransactionRepository
 
-class MoneySaveApplication : Application()
+class MoneySaveApplication : Application() {
+
+    val database by lazy {
+        TransactionDatabase.getDatabase(this)
+    }
+
+    val transactionRepository by lazy {
+        TransactionRepository(database.transactionDao())
+    }
+
+    val savingsDatabase by lazy {
+        SavingsDatabase.getDatabase(this)
+    }
+
+    val savingsRepository by lazy {
+        SavingsRepository(savingsDatabase.savingsGoalDao())
+    }
+
+    val noteDatabase by lazy {
+        NoteDatabase.getDatabase(this)
+    }
+
+    val noteRepository by lazy {
+        NoteRepository(noteDatabase.noteDao())
+    }
+}
