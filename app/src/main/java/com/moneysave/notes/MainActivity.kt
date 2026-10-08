@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import com.moneysave.notes.navigation.AppNavigation
 import com.moneysave.notes.ui.theme.MoneySaveNotesTheme
 
 class MainActivity : ComponentActivity() {
