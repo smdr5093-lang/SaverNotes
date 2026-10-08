@@ -1,88 +1,118 @@
+
 package com.moneysave.notes.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingsScreen(
-    paddingValues: PaddingValues
-) {
+fun SettingsScreen(paddingValues: PaddingValues) {
     var darkMode by rememberSaveable { mutableStateOf(false) }
+    var currency by rememberSaveable { mutableStateOf("INR (₹)") }
+    var showAbout by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Text("Settings", style = MaterialTheme.typography.headlineMedium)
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
+        Card(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth().padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Dark Mode",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = "Use a dark appearance"
+                Column(Modifier.weight(1f)) {
+                    Text("Dark Mode", style = MaterialTheme.typography.titleMedium)
+                    Text("Dark appearance preference")
+                }
+                Switch(
+                    checked = darkMode,
+                    onCheckedChange = { darkMode = it }
                 )
             }
-
-            Switch(
-                checked = darkMode,
-                onCheckedChange = { darkMode = it }
-            )
         }
 
-        Text(
-            text = "Currency: ₹ INR",
-            style = MaterialTheme.typography.titleMedium
-        )
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Currency", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
 
-        Text(
-            text = "Notifications",
-            style = MaterialTheme.typography.titleMedium
-        )
+                listOf("INR (₹)", "USD ($)", "EUR (€)", "GBP (£)").forEach { option ->
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currency == option,
+                            onClick = { currency = option }
+                        )
+                        Text(option)
+                    }
+                }
 
-        Text(
-            text = "Data Backup & Export",
-            style = MaterialTheme.typography.titleMedium
-        )
+                Text(
+                    "Selected: $currency",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
 
-        Text(
-            text = "Import Data",
-            style = MaterialTheme.typography.titleMedium
-        )
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Notifications", style = MaterialTheme.typography.titleMedium)
+                Text("Reminder settings will be added in a future update.")
+            }
+        }
 
-        Text(
-            text = "About MoneySave Notes",
-            style = MaterialTheme.typography.titleMedium
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Data Backup & Export", style = MaterialTheme.typography.titleMedium)
+                Text("Backup and export options will be added in a future update.")
+            }
+        }
+
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Import Data", style = MaterialTheme.typography.titleMedium)
+                Text("Import options will be added in a future update.")
+            }
+        }
+
+        OutlinedButton(
+            onClick = { showAbout = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("About MoneySave Notes")
+        }
+    }
+
+    if (showAbout) {
+        AlertDialog(
+            onDismissRequest = { showAbout = false },
+            title = { Text("MoneySave Notes") },
+            text = {
+                Text(
+                    "Track Money. Save Better. Stay Organized.\n\n" +
+                    "An offline-first app for tracking transactions, " +
+                    "savings goals and personal notes."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showAbout = false }) {
+                    Text("Close")
+                }
+            }
         )
     }
 }
