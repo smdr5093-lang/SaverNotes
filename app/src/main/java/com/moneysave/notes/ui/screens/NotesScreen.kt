@@ -1,35 +1,14 @@
+
 package com.moneysave.notes.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -41,286 +20,186 @@ import com.moneysave.notes.viewmodel.NoteViewModel
 import com.moneysave.notes.viewmodel.NoteViewModelFactory
 
 @Composable
-fun NotesScreen(
-    paddingValues: PaddingValues
-) {
+fun NotesScreen(paddingValues: PaddingValues) {
     val context = LocalContext.current
-    val application =
-        context.applicationContext as MoneySaveApplication
-
-    val viewModel: NoteViewModel = viewModel(
-        factory = NoteViewModelFactory(
-            application.noteRepository
-        )
+    val app = context.applicationContext as MoneySaveApplication
+    val vm: NoteViewModel = viewModel(
+        factory = NoteViewModelFactory(app.noteRepository)
     )
+    val notes by vm.notes.collectAsState()
 
-    val notes by viewModel.notes.collectAsState()
+    var search by remember { mutableStateOf("") }
+    var editingNote by remember { mutableStateOf<Note?>(null) }
+    var showNewNote by remember { mutableStateOf(false) }
 
-    var showDialog by remember {
-        mutableStateOf(false)
+    val filteredNotes = notes.filter {
+        it.title.contains(search, ignoreCase = true) ||
+        it.content.contains(search, ignoreCase = true) ||
+        it.category.contains(search, ignoreCase = true)
     }
 
     Scaffold(
         modifier = Modifier.padding(paddingValues),
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    showDialog = true
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add note"
-                )
+            FloatingActionButton(onClick = { showNewNote = true }) {
+                Icon(Icons.Default.Add, contentDescription = "New note")
             }
         }
     ) { innerPadding ->
-
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
+            Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)
         ) {
-
-            Text(
-                text = "Notes",
-                style = MaterialTheme.typography.headlineMedium
+            Text("My Notes", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                label = { Text("Search notes") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
             )
+            Spacer(Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Keep your personal notes organized",
-                style = MaterialTheme.typography.bodyLarge
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (notes.isEmpty()) {
-
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "No notes yet",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Tap + to create your first note."
-                    )
+            if (filteredNotes.isEmpty()) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(if (search.isBlank()) "No notes yet. Tap + to add one." else "No matching notes found.")
                 }
-
             } else {
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        items = notes,
-                        key = { it.id }
-                    ) { note ->
-
-                        NoteCard(
-                            note = note,
-                            onDelete = {
-                                viewModel.deleteNote(note)
-                            },
-                            onPin = {
-                                viewModel.updateNote(
-                                    note.copy(
-                                        isPinned = !note.isPinned,
-                                        updatedAt = System.currentTimeMillis()
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(filteredNotes, key = { it.id }) { note ->
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp)) {
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        note.title,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.weight(1f)
                                     )
-                                )
+                                    if (note.isPinned) {
+                                        Icon(Icons.Default.PushPin, contentDescription = "Pinned")
+                                    }
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                Text(note.content)
+                                Spacer(Modifier.height(6.dp))
+                                Text("Category: ${note.category}", style = MaterialTheme.typography.bodySmall)
+                                Spacer(Modifier.height(8.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    OutlinedButton(onClick = {
+                                        editingNote = note
+                                    }) {
+                                        Text("Edit")
+                                    }
+                                    OutlinedButton(onClick = {
+                                        vm.updateNote(
+                                            note.copy(
+                                                isPinned = !note.isPinned,
+                                                updatedAt = System.currentTimeMillis()
+                                            )
+                                        )
+                                    }) {
+                                        Text(if (note.isPinned) "Unpin" else "Pin")
+                                    }
+                                    TextButton(onClick = {
+                                        vm.deleteNote(note)
+                                    }) {
+                                        Text("Delete")
+                                    }
+                                }
                             }
-                        )
+                        }
                     }
                 }
             }
         }
     }
 
-    if (showDialog) {
-        AddNoteDialog(
-            onDismiss = {
-                showDialog = false
-            },
-            onAdd = { title, content, category ->
-                viewModel.addNote(
-                    Note(
+    if (showNewNote) {
+        NoteEditorDialog(
+            initialNote = null,
+            onDismiss = { showNewNote = false },
+            onSave = { title, content, category ->
+                vm.addNote(Note(title = title, content = content, category = category))
+                showNewNote = false
+            }
+        )
+    }
+
+    val noteToEdit = editingNote
+    if (noteToEdit != null) {
+        NoteEditorDialog(
+            initialNote = noteToEdit,
+            onDismiss = { editingNote = null },
+            onSave = { title, content, category ->
+                vm.updateNote(
+                    noteToEdit.copy(
                         title = title,
                         content = content,
-                        category = category
+                        category = category,
+                        updatedAt = System.currentTimeMillis()
                     )
                 )
-
-                showDialog = false
+                editingNote = null
             }
         )
     }
 }
 
 @Composable
-private fun NoteCard(
-    note: Note,
-    onDelete: () -> Unit,
-    onPin: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Text(
-                    text = note.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f)
-                )
-
-                if (note.isPinned) {
-                    Icon(
-                        imageVector = Icons.Default.PushPin,
-                        contentDescription = "Pinned"
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = note.content,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Category: ${note.category}",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onPin
-                ) {
-                    Text(
-                        if (note.isPinned) "Unpin" else "Pin"
-                    )
-                }
-
-                Button(
-                    onClick = onDelete
-                ) {
-                    Text("Delete")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AddNoteDialog(
+private fun NoteEditorDialog(
+    initialNote: Note?,
     onDismiss: () -> Unit,
-    onAdd: (String, String, String) -> Unit
+    onSave: (String, String, String) -> Unit
 ) {
-    var title by remember {
-        mutableStateOf("")
-    }
-
-    var content by remember {
-        mutableStateOf("")
-    }
-
-    var category by remember {
-        mutableStateOf("Other")
-    }
+    var title by remember(initialNote?.id) { mutableStateOf(initialNote?.title ?: "") }
+    var content by remember(initialNote?.id) { mutableStateOf(initialNote?.content ?: "") }
+    var category by remember(initialNote?.id) { mutableStateOf(initialNote?.category ?: "Other") }
+    var error by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text("New Note")
-        },
+        title = { Text(if (initialNote == null) "New Note" else "Edit Note") },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {
-                        title = it
-                    },
-                    label = {
-                        Text("Title")
-                    },
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
                     singleLine = true
                 )
-
                 OutlinedTextField(
                     value = content,
-                    onValueChange = {
-                        content = it
-                    },
-                    label = {
-                        Text("Content")
-                    },
-                    minLines = 4
+                    onValueChange = { content = it },
+                    label = { Text("Content") },
+                    minLines = 3
                 )
-
                 OutlinedTextField(
                     value = category,
-                    onValueChange = {
-                        category = it
-                    },
-                    label = {
-                        Text("Category")
-                    },
+                    onValueChange = { category = it },
+                    label = { Text("Category") },
                     singleLine = true
                 )
+                if (error.isNotBlank()) {
+                    Text(error, color = MaterialTheme.colorScheme.error)
+                }
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    if (
-                        title.isNotBlank() &&
-                        content.isNotBlank()
-                    ) {
-                        onAdd(
-                            title.trim(),
-                            content.trim(),
-                            category.trim().ifBlank { "Other" }
-                        )
-                    }
+            Button(onClick = {
+                if (title.isBlank()) {
+                    error = "Title enter karo."
+                } else {
+                    onSave(title.trim(), content.trim(), category.trim().ifBlank { "Other" })
                 }
-            ) {
+            }) {
                 Text("Save")
             }
         },
         dismissButton = {
-            OutlinedButton(
-                onClick = onDismiss
-            ) {
-                Text("Cancel")
-            }
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
     )
 }
