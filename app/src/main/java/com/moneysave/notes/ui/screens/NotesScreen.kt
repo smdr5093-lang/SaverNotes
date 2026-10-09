@@ -24,7 +24,7 @@ fun NotesScreen(paddingValues: PaddingValues) {
     val context = LocalContext.current
     val app = context.applicationContext as MoneySaveApplication
     val vm: NoteViewModel = viewModel(
-        factory = NoteViewModelFactory(app.notesRepository)
+        factory = NoteViewModelFactory(app.noteRepository)
     )
     val notes by vm.notes.collectAsState()
 
