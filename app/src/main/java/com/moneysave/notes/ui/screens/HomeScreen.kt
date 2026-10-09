@@ -52,7 +52,7 @@ fun HomeScreen(
 
     val noteViewModel: NoteViewModel = viewModel(
         factory = NoteViewModelFactory(
-            application.noteRepository
+            application.notesRepository
         )
     )
 
