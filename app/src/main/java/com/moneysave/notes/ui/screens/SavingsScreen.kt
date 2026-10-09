@@ -1,4 +1,3 @@
-
 package com.moneysave.notes.ui.screens
 
 import androidx.compose.foundation.layout.*
@@ -78,7 +77,7 @@ fun SavingsScreen(paddingValues: PaddingValues) {
 
                                 Spacer(Modifier.height(10.dp))
                                 LinearProgressIndicator(
-                                    progress = { progress },
+                                    progress = progress,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                                 Spacer(Modifier.height(8.dp))
